@@ -1,0 +1,1023 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sistema Abbinamento Coppie Junior-Senior</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #1e3a8a 0%, #fbbf24 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+        
+        .container {
+            max-width: 800px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 20px;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+            overflow: hidden;
+        }
+        
+        .header {
+            background: linear-gradient(135deg, #1e3a8a 0%, #fbbf24 100%);
+            color: white;
+            padding: 30px;
+            text-align: center;
+        }
+        
+        .header h1 {
+            font-size: 28px;
+            margin-bottom: 10px;
+        }
+        
+        .header p {
+            opacity: 0.9;
+            font-size: 16px;
+        }
+        
+        .content {
+            padding: 40px;
+        }
+        
+        .form-group {
+            margin-bottom: 25px;
+        }
+        
+        label {
+            display: block;
+            font-weight: 600;
+            margin-bottom: 8px;
+            color: #333;
+        }
+        
+        input[type="text"], select {
+            width: 100%;
+            padding: 12px;
+            border: 2px solid #e0e0e0;
+            border-radius: 8px;
+            font-size: 16px;
+            transition: border-color 0.3s;
+        }
+        
+        input[type="text"]:focus, select:focus {
+            outline: none;
+            border-color: #1e3a8a;
+        }
+        
+        .preference-group {
+            background: #f8f9fa;
+            padding: 20px;
+            border-radius: 10px;
+            margin-top: 10px;
+        }
+        
+        .preference-group h3 {
+            color: #1e3a8a;
+            margin-bottom: 15px;
+            font-size: 18px;
+        }
+        
+        .btn {
+            background: linear-gradient(135deg, #1e3a8a 0%, #fbbf24 100%);
+            color: white;
+            padding: 15px 30px;
+            border: none;
+            border-radius: 8px;
+            font-size: 18px;
+            font-weight: 600;
+            cursor: pointer;
+            width: 100%;
+            transition: transform 0.2s;
+        }
+        
+        .btn:hover {
+            transform: translateY(-2px);
+        }
+        
+        .btn:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+        }
+        
+        .btn-secondary {
+            background: #6c757d;
+            margin-top: 10px;
+        }
+        
+        .success-message {
+            background: #d4edda;
+            color: #155724;
+            padding: 20px;
+            border-radius: 8px;
+            margin-top: 20px;
+            text-align: center;
+            font-size: 18px;
+            font-weight: bold;
+        }
+        
+        .admin-section {
+            display: none;
+        }
+        
+        .password-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.8);
+            display: none;
+            align-items: center;
+            justify-content: center;
+            z-index: 1000;
+        }
+        
+        .password-box {
+            background: white;
+            padding: 40px;
+            border-radius: 15px;
+            box-shadow: 0 10px 40px rgba(0,0,0,0.3);
+            max-width: 400px;
+            width: 90%;
+        }
+        
+        .password-box h2 {
+            color: #1e3a8a;
+            margin-bottom: 20px;
+            text-align: center;
+        }
+        
+        .password-box input {
+            width: 100%;
+            padding: 12px;
+            border: 2px solid #e0e0e0;
+            border-radius: 8px;
+            font-size: 16px;
+            margin-bottom: 15px;
+        }
+        
+        .password-box input:focus {
+            outline: none;
+            border-color: #1e3a8a;
+        }
+        
+        .password-error {
+            color: #dc3545;
+            text-align: center;
+            margin-top: 10px;
+            display: none;
+        }
+        
+        .tab-buttons {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 20px;
+        }
+        
+        .tab-btn {
+            flex: 1;
+            padding: 12px;
+            background: #e0e0e0;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            font-weight: 600;
+        }
+        
+        .tab-btn.active {
+            background: linear-gradient(135deg, #1e3a8a 0%, #fbbf24 100%);
+            color: white;
+        }
+        
+        .responses-list {
+            max-height: 400px;
+            overflow-y: auto;
+            border: 2px solid #e0e0e0;
+            border-radius: 8px;
+            padding: 15px;
+        }
+        
+        .response-item {
+            background: #f8f9fa;
+            padding: 15px;
+            border-radius: 8px;
+            margin-bottom: 10px;
+        }
+        
+        .response-item h4 {
+            color: #1e3a8a;
+            margin-bottom: 8px;
+        }
+        
+        .pairs-result {
+            margin-top: 20px;
+        }
+        
+        .pair-item {
+            padding: 20px;
+            border-radius: 10px;
+            margin-bottom: 15px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        
+        .pair-number {
+            background: #4caf50;
+            color: white;
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: bold;
+        }
+        
+        .pair-members {
+            flex: 1;
+            margin: 0 20px;
+        }
+        
+        .pair-score {
+            background: white;
+            padding: 8px 15px;
+            border-radius: 20px;
+            font-weight: 600;
+        }
+        
+        .stats {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+            gap: 15px;
+            margin-bottom: 20px;
+        }
+        
+        .stat-card {
+            background: #f8f9fa;
+            padding: 15px;
+            border-radius: 8px;
+            text-align: center;
+        }
+        
+        .stat-number {
+            font-size: 32px;
+            font-weight: bold;
+            color: #1e3a8a;
+        }
+        
+        .stat-label {
+            color: #666;
+            margin-top: 5px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>🤝 Abbinamento Coppie Junior-Senior</h1>
+            <p>Seleziona le tue preferenze per il matching ottimale</p>
+        </div>
+        
+        <div class="content">
+            <!-- Tab Buttons -->
+            <div class="tab-buttons">
+                <button class="tab-btn active" onclick="showTab('participant')">👤 Partecipante</button>
+                <button class="tab-btn" onclick="showTab('admin')">⚙️ Amministrazione</button>
+            </div>
+            
+            <!-- Participant Form -->
+            <div id="participant-section">
+                <form id="preferenceForm">
+                    <div class="form-group">
+                        <label for="role">Sei:</label>
+                        <select id="role" required>
+                            <option value="">Seleziona...</option>
+                            <option value="junior">Junior</option>
+                            <option value="senior">Senior</option>
+                        </select>
+                    </div>
+                    
+                    <div class="form-group" id="nameSection" style="display:none;">
+                        <label for="name">Seleziona il tuo nome:</label>
+                        <select id="name" required>
+                            <option value="">Seleziona il tuo nome...</option>
+                        </select>
+                    </div>
+                    
+                    <div class="preference-group" id="preferencesSection" style="display:none;">
+                        <h3>Seleziona 2 preferenze:</h3>
+                        <div class="form-group">
+                            <label for="preference1">Prima preferenza:</label>
+                            <select id="preference1" required>
+                                <option value="">Seleziona...</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label for="preference2">Seconda preferenza:</label>
+                            <select id="preference2" required>
+                                <option value="">Seleziona...</option>
+                            </select>
+                        </div>
+                    </div>
+                    
+                    <button type="submit" class="btn" id="submitBtn">Invia Preferenze</button>
+                </form>
+                
+                <div id="successMessage" style="display:none;" class="success-message">
+                    ✅ Dati inseriti con successo! Un altro utente può ora inserire le sue preferenze.
+                </div>
+            </div>
+            
+            <!-- Admin Section -->
+            <div id="admin-section" class="admin-section">
+                <div class="form-group">
+                    <label for="excelUpload">📊 Carica Elenco Partecipanti (Excel):</label>
+                    <input type="file" id="excelUpload" accept=".xlsx,.xls" style="padding: 10px; border: 2px dashed #667eea; border-radius: 8px; width: 100%;">
+                    <small style="color: #666; display: block; margin-top: 5px;">
+                        Il file deve avere 2 colonne: <strong>nominativo</strong> | <strong>tipologia</strong> (jr o sr)
+                    </small>
+                </div>
+                
+                <div id="uploadSuccess" style="display:none; background: #d4edda; color: #155724; padding: 15px; border-radius: 8px; margin-bottom: 20px;">
+                    ✅ <span id="uploadMessage"></span>
+                </div>
+                
+                <div class="stats" id="stats"></div>
+                
+                <h3>Risposte raccolte:</h3>
+                <div class="responses-list" id="responsesList">
+                    <p style="text-align: center; color: #999;">Nessuna risposta ancora</p>
+                </div>
+                
+                <button class="btn" onclick="generatePairs()" id="generateBtn" disabled>
+                    🎯 Genera Abbinamenti Ottimali
+                </button>
+                
+                <button class="btn btn-secondary" onclick="clearParticipantLists()">
+                    🗑️ Elimina Liste Partecipanti
+                </button>
+                
+                <button class="btn btn-secondary" onclick="resetResponses()">
+                    🔄 Elimina Solo Risposte
+                </button>
+                
+                <button class="btn btn-secondary" onclick="resetData()" style="background: #dc3545;">
+                    ⚠️ Reset Completo (Liste + Risposte)
+                </button>
+                
+                <div id="pairsResult" class="pairs-result" style="display:none;">
+                    <h3>Coppie Generate:</h3>
+                    <div id="pairsList"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Password Overlay -->
+    <div class="password-overlay" id="passwordOverlay">
+        <div class="password-box">
+            <h2>🔒 Accesso Amministrazione</h2>
+            <input type="password" id="adminPassword" placeholder="Inserisci password">
+            <button class="btn" onclick="checkPassword()">Accedi</button>
+            <button class="btn btn-secondary" onclick="closePasswordOverlay()">Annulla</button>
+            <p class="password-error" id="passwordError">❌ Password errata!</p>
+        </div>
+    </div>
+    
+    <script>
+        // VARIABILI GLOBALI
+        let juniors = [];
+        let seniors = [];
+        let responses = [];
+        
+        // INIZIALIZZAZIONE AL CARICAMENTO PAGINA
+        window.addEventListener('load', function() {
+            console.log('Pagina caricata');
+            loadParticipantsLists();
+            loadResponses();
+            setupFormHandlers();
+            setupExcelUpload();
+            updateStats();
+        });
+        
+        // CARICA LISTE PARTECIPANTI
+        function loadParticipantsLists() {
+            const saved = localStorage.getItem('participantLists');
+            if (saved) {
+                const lists = JSON.parse(saved);
+                juniors = lists.juniors;
+                seniors = lists.seniors;
+            } else {
+                juniors = [
+                    "Luca Bianchi", "Sofia Romano", "Marco Ferretti", "Giulia Conti", "Andrea Marino",
+                    "Chiara Gallo", "Matteo Costa", "Francesca Ricci", "Alessandro Serra", "Elena Greco",
+                    "Davide Colombo", "Martina Bruno", "Lorenzo Rizzo", "Valentina Barbieri", "Simone Fontana"
+                ];
+                
+                seniors = [
+                    "Giovanni Rossi", "Maria Russo", "Giuseppe Esposito", "Anna Ferrari", "Antonio Bianchi",
+                    "Laura Romano", "Francesco Gallo", "Paola Conti", "Roberto Marino", "Cristina Greco",
+                    "Stefano Bruno", "Alessandra Ricci", "Claudio Costa", "Silvia Colombo", "Paolo Barbieri"
+                ];
+            }
+            console.log('Liste caricate:', juniors.length, 'junior,', seniors.length, 'senior');
+        }
+        
+        // SALVA LISTE PARTECIPANTI
+        function saveParticipantsLists() {
+            localStorage.setItem('participantLists', JSON.stringify({
+                juniors: juniors,
+                seniors: seniors
+            }));
+        }
+        
+        // CARICA RISPOSTE
+        function loadResponses() {
+            const saved = localStorage.getItem('pairingResponses');
+            responses = saved ? JSON.parse(saved) : [];
+            console.log('Risposte caricate:', responses.length);
+        }
+        
+        // SALVA RISPOSTE
+        function saveResponses() {
+            localStorage.setItem('pairingResponses', JSON.stringify(responses));
+        }
+        
+        // SETUP FORM HANDLERS
+        function setupFormHandlers() {
+            const form = document.getElementById('preferenceForm');
+            const roleSelect = document.getElementById('role');
+            const nameSelect = document.getElementById('name');
+            const pref1Select = document.getElementById('preference1');
+            
+            // Quando cambia il ruolo
+            roleSelect.addEventListener('change', function() {
+                updateNameList();
+            });
+            
+            // Quando cambia il nome
+            nameSelect.addEventListener('change', function() {
+                updatePreferenceList();
+            });
+            
+            // Quando cambia la prima preferenza
+            pref1Select.addEventListener('change', function() {
+                updateSecondPreference();
+            });
+            
+            // SUBMIT DEL FORM
+            form.addEventListener('submit', function(e) {
+                e.preventDefault();
+                console.log('Form submitted!');
+                
+                const nameField = document.getElementById('name');
+                const roleField = document.getElementById('role');
+                const pref1Field = document.getElementById('preference1');
+                const pref2Field = document.getElementById('preference2');
+                
+                const name = nameField.value;
+                const role = roleField.value;
+                const pref1 = pref1Field.value;
+                const pref2 = pref2Field.value;
+                
+                console.log('Dati:', {name, role, pref1, pref2});
+                
+                // Validazione
+                if (!name || !role || !pref1 || !pref2) {
+                    alert('Compila tutti i campi!');
+                    return;
+                }
+                
+                if (pref1 === pref2) {
+                    alert('Le due preferenze devono essere diverse!');
+                    return;
+                }
+                
+                // Controlla duplicati
+                const existing = responses.find(r => r.name === name);
+                if (existing) {
+                    if (!confirm(`${name} ha già risposto. Vuoi sovrascrivere?`)) {
+                        return;
+                    }
+                    responses = responses.filter(r => r.name !== name);
+                }
+                
+                // Salva risposta
+                responses.push({
+                    name: name,
+                    role: role,
+                    preferences: [pref1, pref2],
+                    timestamp: new Date().toISOString()
+                });
+                
+                saveResponses();
+                console.log('Risposta salvata! Totale:', responses.length);
+                
+                // Reset form
+                form.reset();
+                document.getElementById('nameSection').style.display = 'none';
+                document.getElementById('preferencesSection').style.display = 'none';
+                
+                // Mostra messaggio successo
+                const successMsg = document.getElementById('successMessage');
+                successMsg.style.display = 'block';
+                
+                setTimeout(function() {
+                    successMsg.style.display = 'none';
+                }, 5000);
+                
+                updateStats();
+            });
+            
+            console.log('Form handlers setup completato');
+        }
+        
+        // AGGIORNA LISTA NOMI
+        function updateNameList() {
+            const role = document.getElementById('role').value;
+            const nameSection = document.getElementById('nameSection');
+            const nameSelect = document.getElementById('name');
+            const preferencesSection = document.getElementById('preferencesSection');
+            
+            if (!role) {
+                nameSection.style.display = 'none';
+                preferencesSection.style.display = 'none';
+                return;
+            }
+            
+            nameSection.style.display = 'block';
+            preferencesSection.style.display = 'none';
+            
+            const nameList = role === 'junior' ? juniors : seniors;
+            const options = nameList.map(name => `<option value="${name}">${name}</option>`).join('');
+            
+            nameSelect.innerHTML = '<option value="">Seleziona il tuo nome...</option>' + options;
+            
+            document.getElementById('preference1').value = '';
+            document.getElementById('preference2').value = '';
+        }
+        
+        // AGGIORNA LISTA PREFERENZE
+        function updatePreferenceList() {
+            const role = document.getElementById('role').value;
+            const name = document.getElementById('name').value;
+            const pref1 = document.getElementById('preference1');
+            const pref2 = document.getElementById('preference2');
+            const section = document.getElementById('preferencesSection');
+            
+            if (!role || !name) {
+                section.style.display = 'none';
+                return;
+            }
+            
+            section.style.display = 'block';
+            
+            const list = role === 'junior' ? seniors : juniors;
+            const options = list.map(name => `<option value="${name}">${name}</option>`).join('');
+            
+            pref1.innerHTML = '<option value="">Seleziona...</option>' + options;
+            pref2.innerHTML = '<option value="">Seleziona...</option>' + options;
+        }
+        
+        // AGGIORNA SECONDA PREFERENZA
+        function updateSecondPreference() {
+            const role = document.getElementById('role').value;
+            const pref1Value = document.getElementById('preference1').value;
+            const pref2 = document.getElementById('preference2');
+            
+            if (!pref1Value) {
+                updatePreferenceList();
+                return;
+            }
+            
+            const list = role === 'junior' ? seniors : juniors;
+            const filteredList = list.filter(name => name !== pref1Value);
+            const options = filteredList.map(name => `<option value="${name}">${name}</option>`).join('');
+            
+            pref2.innerHTML = '<option value="">Seleziona...</option>' + options;
+        }
+        
+        // SETUP UPLOAD EXCEL
+        function setupExcelUpload() {
+            document.getElementById('excelUpload').addEventListener('change', function(e) {
+                const file = e.target.files[0];
+                if (!file) return;
+                
+                const reader = new FileReader();
+                reader.onload = function(e) {
+                    try {
+                        const data = new Uint8Array(e.target.result);
+                        const workbook = XLSX.read(data, { type: 'array' });
+                        const firstSheet = workbook.Sheets[workbook.SheetNames[0]];
+                        const rows = XLSX.utils.sheet_to_json(firstSheet);
+                        
+                        juniors = [];
+                        seniors = [];
+                        
+                        rows.forEach(row => {
+                            const nome = row.nominativo || row.Nominativo || row.nome || row.Nome;
+                            const tipo = (row.tipologia || row.Tipologia || row.tipo || row.Tipo || '').toLowerCase();
+                            
+                            if (nome && tipo) {
+                                if (tipo === 'jr' || tipo === 'junior') {
+                                    juniors.push(nome);
+                                } else if (tipo === 'sr' || tipo === 'senior') {
+                                    seniors.push(nome);
+                                }
+                            }
+                        });
+                        
+                        if (juniors.length === 0 && seniors.length === 0) {
+                            alert('Nessun partecipante trovato nel file!');
+                            document.getElementById('excelUpload').value = '';
+                            return;
+                        }
+                        
+                        saveParticipantsLists();
+                        
+                        const uploadSuccess = document.getElementById('uploadSuccess');
+                        const uploadMessage = document.getElementById('uploadMessage');
+                        uploadMessage.textContent = `Caricati ${juniors.length} Junior e ${seniors.length} Senior`;
+                        uploadSuccess.style.display = 'block';
+                        
+                        setTimeout(() => {
+                            uploadSuccess.style.display = 'none';
+                        }, 5000);
+                        
+                        updateStats();
+                        document.getElementById('excelUpload').value = '';
+                        
+                    } catch (error) {
+                        alert('Errore lettura file: ' + error.message);
+                        document.getElementById('excelUpload').value = '';
+                    }
+                };
+                reader.readAsArrayBuffer(file);
+            });
+        }
+        
+        // MOSTRA TAB
+        function showTab(tab) {
+            if (tab === 'admin') {
+                document.getElementById('passwordOverlay').style.display = 'flex';
+                document.getElementById('adminPassword').value = '';
+                document.getElementById('passwordError').style.display = 'none';
+                setTimeout(() => {
+                    document.getElementById('adminPassword').focus();
+                }, 100);
+                return;
+            }
+            
+            const participantSection = document.getElementById('participant-section');
+            const adminSection = document.getElementById('admin-section');
+            const tabs = document.querySelectorAll('.tab-btn');
+            
+            tabs.forEach(btn => btn.classList.remove('active'));
+            
+            participantSection.style.display = 'block';
+            adminSection.style.display = 'none';
+            tabs[0].classList.add('active');
+        }
+        
+        // CONTROLLA PASSWORD
+        function checkPassword() {
+            const password = document.getElementById('adminPassword').value;
+            const errorMsg = document.getElementById('passwordError');
+            
+            if (password === 'REALE') {
+                closePasswordOverlay();
+                showAdminSection();
+            } else {
+                errorMsg.style.display = 'block';
+                document.getElementById('adminPassword').value = '';
+                document.getElementById('adminPassword').focus();
+            }
+        }
+        
+        // CHIUDI OVERLAY PASSWORD
+        function closePasswordOverlay() {
+            document.getElementById('passwordOverlay').style.display = 'none';
+            const tabs = document.querySelectorAll('.tab-btn');
+            tabs[0].classList.add('active');
+            tabs[1].classList.remove('active');
+        }
+        
+        // MOSTRA SEZIONE ADMIN
+        function showAdminSection() {
+            const participantSection = document.getElementById('participant-section');
+            const adminSection = document.getElementById('admin-section');
+            const tabs = document.querySelectorAll('.tab-btn');
+            
+            tabs.forEach(btn => btn.classList.remove('active'));
+            tabs[1].classList.add('active');
+            
+            participantSection.style.display = 'none';
+            adminSection.style.display = 'block';
+            updateAdminView();
+        }
+        
+        // Aggiungi listener per Enter sulla password
+        document.addEventListener('DOMContentLoaded', function() {
+            const passwordInput = document.getElementById('adminPassword');
+            if (passwordInput) {
+                passwordInput.addEventListener('keypress', function(e) {
+                    if (e.key === 'Enter') {
+                        checkPassword();
+                    }
+                });
+            }
+        });
+        
+        // AGGIORNA VISTA ADMIN
+        function updateAdminView() {
+            loadResponses();
+            updateStats();
+            
+            const responsesList = document.getElementById('responsesList');
+            
+            if (responses.length === 0) {
+                responsesList.innerHTML = '<p style="text-align: center; color: #999;">Nessuna risposta ancora</p>';
+                document.getElementById('generateBtn').disabled = true;
+            } else {
+                responsesList.innerHTML = responses.map(r => `
+                    <div class="response-item">
+                        <h4>${r.name} (${r.role === 'junior' ? 'Junior' : 'Senior'})</h4>
+                        <p><strong>Preferenze:</strong> 1) ${r.preferences[0]}, 2) ${r.preferences[1]}</p>
+                    </div>
+                `).join('');
+                
+                document.getElementById('generateBtn').disabled = false;
+            }
+        }
+        
+        // AGGIORNA STATISTICHE
+        function updateStats() {
+            const juniorResponses = responses.filter(r => r.role === 'junior');
+            const seniorResponses = responses.filter(r => r.role === 'senior');
+            
+            document.getElementById('stats').innerHTML = `
+                <div class="stat-card">
+                    <div class="stat-number">${responses.length}</div>
+                    <div class="stat-label">Risposte Totali</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-number">${juniorResponses.length}/${juniors.length}</div>
+                    <div class="stat-label">Junior</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-number">${seniorResponses.length}/${seniors.length}</div>
+                    <div class="stat-label">Senior</div>
+                </div>
+            `;
+        }
+        
+        // GENERA COPPIE
+        function generatePairs() {
+            loadResponses();
+            
+            const juniorResponses = responses.filter(r => r.role === 'junior');
+            const seniorResponses = responses.filter(r => r.role === 'senior');
+            
+            if (juniorResponses.length === 0 || seniorResponses.length === 0) {
+                alert('Servono risposte sia da Junior che da Senior!');
+                return;
+            }
+            
+            const pairs = matchingAlgorithm(juniorResponses, seniorResponses);
+            displayPairs(pairs);
+        }
+        
+        // ALGORITMO MATCHING
+        function matchingAlgorithm(juniors, seniors) {
+            const pairs = [];
+            const seniorMatched = new Set();
+            const juniorMatched = new Set();
+            
+            // FASE 1: SCELTE RECIPROCHE
+            juniors.forEach(junior => {
+                if (juniorMatched.has(junior.name)) return;
+                
+                seniors.forEach(senior => {
+                    if (seniorMatched.has(senior.name)) return;
+                    
+                    const juniorChoosesSenior = junior.preferences.includes(senior.name);
+                    const seniorChoosesJunior = senior.preferences.includes(junior.name);
+                    
+                    if (juniorChoosesSenior && seniorChoosesJunior) {
+                        const juniorPrefIndex = junior.preferences.indexOf(senior.name);
+                        const seniorPrefIndex = senior.preferences.indexOf(junior.name);
+                        
+                        let score = 20;
+                        if (juniorPrefIndex === 0) score += 5;
+                        if (seniorPrefIndex === 0) score += 5;
+                        
+                        pairs.push({
+                            junior: junior.name,
+                            senior: senior.name,
+                            score: score,
+                            matchQuality: 'Reciproca',
+                            matchType: 'mutual'
+                        });
+                        
+                        juniorMatched.add(junior.name);
+                        seniorMatched.add(senior.name);
+                    }
+                });
+            });
+            
+            // FASE 2: PREFERENZE JUNIOR
+            const unmatchedJuniors = juniors.filter(j => !juniorMatched.has(j.name));
+            const unmatchedSeniors = seniors.filter(s => !seniorMatched.has(s.name));
+            
+            unmatchedJuniors.forEach(junior => {
+                if (juniorMatched.has(junior.name)) return;
+                
+                for (let i = 0; i < junior.preferences.length; i++) {
+                    const preferredSenior = unmatchedSeniors.find(s => s.name === junior.preferences[i]);
+                    
+                    if (preferredSenior && !seniorMatched.has(preferredSenior.name)) {
+                        const score = i === 0 ? 15 : 10;
+                        
+                        pairs.push({
+                            junior: junior.name,
+                            senior: preferredSenior.name,
+                            score: score,
+                            matchQuality: i === 0 ? 'Prima scelta Jr' : 'Seconda scelta Jr',
+                            matchType: 'junior_preference'
+                        });
+                        
+                        juniorMatched.add(junior.name);
+                        seniorMatched.add(preferredSenior.name);
+                        break;
+                    }
+                }
+            });
+            
+            // FASE 3: PREFERENZE SENIOR
+            const stillUnmatchedJuniors = juniors.filter(j => !juniorMatched.has(j.name));
+            const stillUnmatchedSeniors = seniors.filter(s => !seniorMatched.has(s.name));
+            
+            stillUnmatchedSeniors.forEach(senior => {
+                if (seniorMatched.has(senior.name)) return;
+                
+                for (let i = 0; i < senior.preferences.length; i++) {
+                    const preferredJunior = stillUnmatchedJuniors.find(j => j.name === senior.preferences[i]);
+                    
+                    if (preferredJunior && !juniorMatched.has(preferredJunior.name)) {
+                        const score = i === 0 ? 15 : 10;
+                        
+                        pairs.push({
+                            junior: preferredJunior.name,
+                            senior: senior.name,
+                            score: score,
+                            matchQuality: i === 0 ? 'Prima scelta Sr' : 'Seconda scelta Sr',
+                            matchType: 'senior_preference'
+                        });
+                        
+                        juniorMatched.add(preferredJunior.name);
+                        seniorMatched.add(senior.name);
+                        break;
+                    }
+                }
+            });
+            
+            // FASE 4: RANDOM
+            const finalUnmatchedJuniors = juniors.filter(j => !juniorMatched.has(j.name));
+            const finalUnmatchedSeniors = seniors.filter(s => !seniorMatched.has(s.name));
+            
+            const shuffledSeniors = [...finalUnmatchedSeniors].sort(() => Math.random() - 0.5);
+            
+            finalUnmatchedJuniors.forEach((junior, index) => {
+                if (index < shuffledSeniors.length) {
+                    pairs.push({
+                        junior: junior.name,
+                        senior: shuffledSeniors[index].name,
+                        score: 5,
+                        matchQuality: 'Random',
+                        matchType: 'random'
+                    });
+                }
+            });
+            
+            return pairs;
+        }
+        
+        // MOSTRA COPPIE
+        function displayPairs(pairs) {
+            const pairsResult = document.getElementById('pairsResult');
+            const pairsList = document.getElementById('pairsList');
+            
+            pairsResult.style.display = 'block';
+            
+            const sortedPairs = [...pairs].sort((a, b) => b.score - a.score);
+            
+            pairsList.innerHTML = sortedPairs.map((pair, index) => {
+                let bgColor = '';
+                let icon = '';
+                
+                switch(pair.matchType) {
+                    case 'mutual':
+                        bgColor = 'linear-gradient(135deg, #d4edda 0%, #c3e6cb 100%)';
+                        icon = '💚';
+                        break;
+                    case 'junior_preference':
+                        bgColor = 'linear-gradient(135deg, #d1ecf1 0%, #bee5eb 100%)';
+                        icon = '💙';
+                        break;
+                    case 'senior_preference':
+                        bgColor = 'linear-gradient(135deg, #fff3cd 0%, #ffeeba 100%)';
+                        icon = '💛';
+                        break;
+                    case 'random':
+                        bgColor = 'linear-gradient(135deg, #f8d7da 0%, #f5c6cb 100%)';
+                        icon = '🎲';
+                        break;
+                }
+                
+                return `
+                    <div class="pair-item" style="background: ${bgColor};">
+                        <div class="pair-number">${index + 1}</div>
+                        <div class="pair-members">
+                            <strong>Junior:</strong> ${pair.junior}<br>
+                            <strong>Senior:</strong> ${pair.senior}
+                        </div>
+                        <div class="pair-score">
+                            ${icon} ${pair.matchQuality}<br>
+                            <small>(Score: ${pair.score})</small>
+                        </div>
+                    </div>
+                `;
+            }).join('');
+            
+            const legend = `
+                <div style="margin-top: 20px; padding: 15px; background: #f8f9fa; border-radius: 8px;">
+                    <h4 style="margin-bottom: 10px;">Legenda:</h4>
+                    <p>💚 <strong>Reciproca</strong>: Si sono scelti a vicenda</p>
+                    <p>💙 <strong>Prima/Seconda scelta Jr</strong>: Junior ha scelto questo Senior</p>
+                    <p>💛 <strong>Prima/Seconda scelta Sr</strong>: Senior ha scelto questo Junior</p>
+                    <p>🎲 <strong>Random</strong>: Abbinamento casuale</p>
+                </div>
+            `;
+            
+            pairsList.innerHTML += legend;
+        }
+        
+        // DOWNLOAD DATI (RIMOSSO - non più necessario)
+        
+        // ELIMINA LISTE PARTECIPANTI
+        function clearParticipantLists() {
+            if (confirm('Vuoi eliminare le liste dei partecipanti? Le risposte NON saranno cancellate.')) {
+                localStorage.removeItem('participantLists');
+                loadParticipantsLists();
+                document.getElementById('excelUpload').value = '';
+                updateAdminView();
+                
+                const uploadSuccess = document.getElementById('uploadSuccess');
+                const uploadMessage = document.getElementById('uploadMessage');
+                uploadMessage.textContent = 'Liste eliminate. Ripristinate liste di default.';
+                uploadSuccess.style.display = 'block';
+                
+                setTimeout(() => {
+                    uploadSuccess.style.display = 'none';
+                }, 3000);
+            }
+        }
+        
+        // ELIMINA RISPOSTE
+        function resetResponses() {
+            if (confirm('Vuoi eliminare tutte le risposte? Le liste partecipanti NON saranno cancellate.')) {
+                localStorage.removeItem('pairingResponses');
+                responses = [];
+                updateAdminView();
+                document.getElementById('pairsResult').style.display = 'none';
+                alert('Tutte le risposte eliminate.');
+            }
+        }
+        
+        // RESET COMPLETO
+        function resetData() {
+            if (confirm('⚠️ ATTENZIONE: Vuoi cancellare TUTTO?\n\nQuesta azione non può essere annullata.')) {
+                localStorage.removeItem('pairingResponses');
+                localStorage.removeItem('participantLists');
+                responses = [];
+                loadParticipantsLists();
+                updateAdminView();
+                document.getElementById('pairsResult').style.display = 'none';
+                document.getElementById('excelUpload').value = '';
+                alert('✅ Tutti i dati cancellati.');
+            }
+        }
+    </script>
+</body>
+</html>
