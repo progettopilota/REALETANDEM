@@ -1,0 +1,903 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>🎯 Tandem Matching</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+<style>
+:root {
+  --bg:       #0a0718;
+  --card:     rgba(255,255,255,0.06);
+  --bd:       rgba(255,255,255,0.11);
+  --bd-hi:    rgba(167,139,250,0.45);
+  --purple:   #7c3aed;
+  --purple-l: #a78bfa;
+  --blue:     #2563eb;
+  --blue-l:   #93c5fd;
+  --text:     #e2e8f0;
+  --muted:    #94a3b8;
+  --green:    #10b981;
+  --amber:    #f59e0b;
+  --red:      #ef4444;
+  --r:        14px;
+  --rs:       8px;
+  --sh:       0 8px 32px rgba(0,0,0,0.45);
+}
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+body{font-family:'Segoe UI',system-ui,sans-serif;background:linear-gradient(155deg,#0a0718 0%,#1e1b4b 50%,#0f172a 100%);min-height:100vh;color:var(--text);font-size:15px}
+::-webkit-scrollbar{width:5px;height:5px}
+::-webkit-scrollbar-thumb{background:var(--purple);border-radius:3px}
+.wrap{max-width:700px;margin:0 auto;padding:16px}
+
+/* CARD */
+.card{background:var(--card);border:1px solid var(--bd);border-radius:var(--r);padding:22px;backdrop-filter:blur(12px);box-shadow:var(--sh)}
+.card+.card{margin-top:14px}
+.ct{font-size:15px;font-weight:700;color:var(--purple-l);margin-bottom:18px;display:flex;align-items:center;gap:8px}
+
+/* HEADER */
+.hdr{text-align:center;padding:28px 16px 18px}
+.hdr h1{font-size:clamp(24px,6vw,36px);font-weight:900;background:linear-gradient(135deg,#a78bfa,#60a5fa);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;letter-spacing:-0.5px}
+.hdr p{color:var(--muted);font-size:14px;margin-top:4px}
+
+/* SYNC */
+.sync{display:flex;align-items:center;justify-content:center;gap:6px;font-size:12px;color:var(--muted);padding:6px;margin-bottom:10px}
+.dot{width:7px;height:7px;border-radius:50%;background:var(--green);transition:background .3s}
+.dot.sy{background:var(--amber)}
+.dot.er{background:var(--red)}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:.35}}
+.dot:not(.sy):not(.er){animation:pulse 2.2s infinite}
+
+/* TABS */
+.tabs{display:flex;gap:6px;background:rgba(0,0,0,.35);border-radius:var(--r);padding:5px;margin-bottom:18px}
+.tab{flex:1;padding:10px 6px;border:none;border-radius:var(--rs);background:transparent;color:var(--muted);cursor:pointer;font-size:14px;font-weight:600;transition:all .2s}
+.tab.on{background:linear-gradient(135deg,var(--purple),var(--blue));color:#fff;box-shadow:0 2px 14px rgba(124,58,237,.45)}
+.tab:not(.on):hover{color:var(--text);background:rgba(255,255,255,.07)}
+
+/* FORM */
+.fg{margin-bottom:14px}
+.fg label{display:block;font-size:12px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.6px;margin-bottom:6px}
+.fc{width:100%;padding:11px 14px;background:rgba(0,0,0,.3);border:1px solid var(--bd);border-radius:var(--rs);color:var(--text);font-size:15px;transition:border-color .2s,box-shadow .2s;-webkit-appearance:none;appearance:none}
+.fc:focus{outline:none;border-color:var(--purple-l);box-shadow:0 0 0 3px rgba(124,58,237,.2)}
+.fc:disabled{opacity:.45;cursor:not-allowed}
+select.fc{background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath fill='%2394a3b8' d='M6 8L1 3h10z'/%3E%3C/svg%3E");background-repeat:no-repeat;background-position:right 12px center;padding-right:36px;cursor:pointer}
+select.fc option{background:#1e1b4b}
+
+/* BUTTONS */
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:7px;padding:10px 18px;border:none;border-radius:var(--rs);font-size:14px;font-weight:700;cursor:pointer;transition:all .2s;white-space:nowrap}
+.btn:disabled{opacity:.45;cursor:not-allowed}
+.bp{background:linear-gradient(135deg,var(--purple),var(--blue));color:#fff;box-shadow:0 2px 14px rgba(124,58,237,.4)}
+.bp:not(:disabled):hover{transform:translateY(-1px);box-shadow:0 4px 22px rgba(124,58,237,.55)}
+.bg{background:var(--green);color:#fff}.bg:not(:disabled):hover{background:#059669}
+.br{background:var(--red);color:#fff}.br:not(:disabled):hover{background:#dc2626}
+.ba{background:var(--amber);color:#111}.ba:not(:disabled):hover{background:#d97706}
+.bh{background:var(--card);color:var(--text);border:1px solid var(--bd)}.bh:not(:disabled):hover{border-color:var(--purple-l);color:var(--purple-l)}
+.sm{padding:6px 12px;font-size:13px}
+.fw{width:100%}
+
+/* BADGES */
+.bdg{display:inline-flex;align-items:center;padding:2px 9px;border-radius:99px;font-size:12px;font-weight:700}
+.bjr{background:rgba(59,130,246,.2);color:var(--blue-l);border:1px solid rgba(59,130,246,.35)}
+.bsr{background:rgba(167,139,250,.18);color:var(--purple-l);border:1px solid rgba(167,139,250,.35)}
+
+/* STATS */
+.stats{display:grid;grid-template-columns:repeat(auto-fit,minmax(110px,1fr));gap:10px;margin-bottom:18px}
+.stat{background:rgba(0,0,0,.22);border:1px solid var(--bd);border-radius:var(--rs);padding:14px;text-align:center}
+.stat .n{font-size:30px;font-weight:900;color:var(--purple-l);line-height:1}
+.stat .l{font-size:11px;color:var(--muted);margin-top:3px;font-weight:600;text-transform:uppercase;letter-spacing:.5px}
+
+/* TABLE */
+.tw{overflow-x:auto}
+table{width:100%;border-collapse:collapse;font-size:13px}
+thead th{background:rgba(124,58,237,.2);color:var(--purple-l);padding:9px 12px;text-align:left;font-size:11px;font-weight:800;text-transform:uppercase;letter-spacing:.5px;white-space:nowrap}
+tbody tr{border-bottom:1px solid var(--bd);transition:background .15s}
+tbody tr:hover{background:rgba(255,255,255,.04)}
+tbody td{padding:9px 12px}
+
+/* MATCH CARDS */
+.ml{display:flex;flex-direction:column;gap:10px}
+.mc{background:rgba(0,0,0,.22);border-radius:var(--r);padding:14px 16px;border-left:4px solid transparent;display:grid;grid-template-columns:28px 1fr auto;align-items:center;gap:12px}
+.mc.reciproco{border-left-color:var(--green)}
+.mc.pref-jr{border-left-color:var(--blue-l)}
+.mc.pref-sr{border-left-color:var(--purple-l)}
+.mc.random{border-left-color:var(--muted)}
+.mi{font-size:20px;text-align:center}
+.mn{font-weight:700;font-size:14px;line-height:1.7}
+.msep{color:var(--muted);font-size:12px;margin:0 5px}
+.mtrio{font-size:12px;color:var(--amber);margin-top:3px}
+.mreason{font-size:11px;color:var(--muted);margin-top:2px}
+.msc{text-align:right}
+.msc .sn{font-size:18px;font-weight:900;color:var(--purple-l)}
+.msc .sl{font-size:10px;color:var(--muted);text-transform:uppercase;font-weight:700}
+
+/* FILE DROP */
+.drop{border:2px dashed var(--bd);border-radius:var(--r);padding:28px;text-align:center;cursor:pointer;transition:all .2s;color:var(--muted);font-size:14px}
+.drop:hover,.drop.over{border-color:var(--purple-l);background:rgba(124,58,237,.1);color:var(--purple-l)}
+.drop input{display:none}
+.drop .di{font-size:32px;display:block;margin-bottom:8px}
+
+/* TOAST */
+.tbox{position:fixed;bottom:20px;right:20px;z-index:9999;display:flex;flex-direction:column;gap:8px;pointer-events:none}
+.toast{padding:11px 18px;border-radius:var(--rs);font-size:14px;font-weight:600;color:#fff;max-width:300px;animation:tin .3s ease;box-shadow:var(--sh)}
+.toast.s{background:var(--green)}.toast.e{background:var(--red)}.toast.i{background:var(--purple)}
+@keyframes tin{from{transform:translateX(110%);opacity:0}to{transform:translateX(0);opacity:1}}
+
+/* SPINNER */
+.spin{display:inline-block;width:16px;height:16px;border:2px solid rgba(255,255,255,.2);border-top-color:#fff;border-radius:50%;animation:sp .65s linear infinite}
+@keyframes sp{to{transform:rotate(360deg)}}
+
+/* MODAL */
+.mbg{position:fixed;inset:0;background:rgba(0,0,0,.72);z-index:1000;display:flex;align-items:center;justify-content:center;padding:20px}
+.mbox{max-width:420px;width:100%}
+
+/* LOCK */
+.lock{display:flex;flex-direction:column;align-items:center;text-align:center;padding:40px 20px;gap:14px}
+
+/* SUCCESS */
+.ok{text-align:center;padding:36px 20px}
+.ok .emo{font-size:52px}
+.ok h3{font-size:20px;font-weight:800;margin:10px 0 6px}
+.ok p{color:var(--muted);font-size:14px}
+
+/* ALERTS */
+.al{padding:11px 14px;border-radius:var(--rs);font-size:13px;margin-top:10px}
+.alg{background:rgba(16,185,129,.12);border:1px solid rgba(16,185,129,.3);color:#6ee7b7}
+.ale{background:rgba(239,68,68,.12);border:1px solid rgba(239,68,68,.3);color:#fca5a5}
+.ala{background:rgba(245,158,11,.12);border:1px solid rgba(245,158,11,.3);color:#fcd34d}
+
+/* MISC */
+.acts{display:flex;flex-wrap:wrap;gap:8px}
+.hr{height:1px;background:var(--bd);margin:18px 0}
+.h{display:none!important}
+
+@media(max-width:500px){
+  .card{padding:16px}
+  .mc{grid-template-columns:24px 1fr}
+  .msc{display:none}
+}
+</style>
+</head>
+<body>
+
+<div class="wrap">
+
+  <!-- HEADER -->
+  <div class="hdr">
+    <h1>🎯 Tandem Matching</h1>
+    <p>Abbinamento Junior &amp; Senior</p>
+  </div>
+
+  <!-- SYNC BAR -->
+  <div class="sync">
+    <div class="dot" id="dot"></div>
+    <span id="syncTxt">Caricamento...</span>
+  </div>
+
+  <!-- TABS -->
+  <div class="tabs">
+    <button class="tab on" id="tP" onclick="goTab('p')">👤 Partecipante</button>
+    <button class="tab"    id="tA" onclick="goTab('a')">⚙️ Admin</button>
+  </div>
+
+  <!-- ══════════ TAB PARTECIPANTE ══════════ -->
+  <div id="vP">
+
+    <div class="card" id="formCard">
+      <div class="ct">📋 Inserisci le tue preferenze</div>
+
+      <div class="fg">
+        <label>Sei Junior o Senior?</label>
+        <select class="fc" id="selRuolo" onchange="onRuolo()">
+          <option value="">— Seleziona —</option>
+          <option value="jr">Junior</option>
+          <option value="sr">Senior</option>
+        </select>
+      </div>
+
+      <div class="fg">
+        <label>Il tuo nome</label>
+        <select class="fc" id="selNome" disabled onchange="onNome()">
+          <option value="">— Prima seleziona il ruolo —</option>
+        </select>
+      </div>
+
+      <div class="fg">
+        <label id="lbl1">1ª Preferenza</label>
+        <select class="fc" id="selP1" disabled onchange="onP1()">
+          <option value="">— Nessuna preferenza —</option>
+        </select>
+      </div>
+
+      <div class="fg">
+        <label id="lbl2">2ª Preferenza</label>
+        <select class="fc" id="selP2" disabled>
+          <option value="">— Nessuna preferenza —</option>
+        </select>
+      </div>
+
+      <div id="alreadyVoted" class="al ala h">
+        ⚠️ Hai già inviato le preferenze — salvando sovrascriverai la risposta precedente.
+      </div>
+
+      <div style="margin-top:16px">
+        <button class="btn bp fw" id="btnSave" disabled onclick="salva()">
+          💾 Salva Preferenze
+        </button>
+      </div>
+    </div>
+
+    <div class="card h" id="okCard">
+      <div class="ok">
+        <div class="emo">🎉</div>
+        <h3>Preferenze salvate!</h3>
+        <p id="okDetail"></p>
+        <button class="btn bh" style="margin-top:18px" onclick="resetForm()">✏️ Modifica</button>
+      </div>
+    </div>
+
+  </div><!-- /vP -->
+
+  <!-- ══════════ TAB ADMIN ══════════ -->
+  <div id="vA" class="h">
+
+    <!-- LOCK -->
+    <div class="card" id="lockCard">
+      <div class="lock">
+        <div style="font-size:52px">🔐</div>
+        <div>
+          <p style="font-size:18px;font-weight:800;margin-bottom:4px">Area Admin</p>
+          <p style="color:var(--muted);font-size:14px">Inserisci la password per accedere</p>
+        </div>
+        <div style="display:flex;gap:8px;width:100%;max-width:280px">
+          <input class="fc" type="password" id="pwdInput" placeholder="Password"
+                 onkeydown="if(event.key==='Enter')checkPwd()">
+          <button class="btn bp" onclick="checkPwd()">Entra</button>
+        </div>
+        <p id="pwdErr" class="h" style="color:var(--red);font-size:13px">❌ Password errata</p>
+      </div>
+    </div>
+
+    <!-- ADMIN PANEL -->
+    <div id="adminPanel" class="h">
+
+      <!-- Stats -->
+      <div class="card">
+        <div class="ct">📊 Statistiche</div>
+        <div class="stats">
+          <div class="stat"><div class="n" id="sTot">0</div><div class="l">Totale</div></div>
+          <div class="stat"><div class="n" id="sJr">0</div><div class="l">Junior</div></div>
+          <div class="stat"><div class="n" id="sSr">0</div><div class="l">Senior</div></div>
+          <div class="stat"><div class="n" id="sResp">0</div><div class="l">Risposte</div></div>
+        </div>
+      </div>
+
+      <!-- Upload Excel -->
+      <div class="card">
+        <div class="ct">📂 Carica Partecipanti da Excel</div>
+        <label class="drop" id="dropZone">
+          <input type="file" id="xlsFile" accept=".xlsx,.xls" onchange="onXls(this)">
+          <span class="di">📊</span>
+          <strong>Clicca o trascina il file Excel</strong><br>
+          <span>Colonne richieste: <code>nominativo</code> e <code>tipologia</code> (jr / sr)</span>
+        </label>
+        <div id="xlsPreview"></div>
+        <button class="btn bg fw h" id="btnUpload" style="margin-top:12px" onclick="doUpload()">
+          ⬆️ Carica su JSONBin
+        </button>
+      </div>
+
+      <!-- Risposte -->
+      <div class="card">
+        <div class="ct">📝 Risposte Ricevute</div>
+        <div class="tw" id="tblResp">
+          <p style="color:var(--muted);text-align:center;padding:20px">Nessuna risposta ancora</p>
+        </div>
+      </div>
+
+      <!-- Genera match -->
+      <div class="card">
+        <div class="ct">🎯 Genera Abbinamenti</div>
+        <p style="color:var(--muted);font-size:13px;margin-bottom:14px">
+          Priorità: 💚 Reciproci (20–30) → 💙 Pref.Jr (10–15) → 💛 Pref.Sr (10–15) → 🎲 Random (5)
+        </p>
+        <button class="btn bp" onclick="genera()">⚡ Genera Coppie</button>
+        <div id="matchOut" style="margin-top:18px"></div>
+      </div>
+
+      <!-- Azioni -->
+      <div class="card">
+        <div class="ct">⚠️ Azioni Amministrative</div>
+        <div class="acts">
+          <button class="btn ba sm" onclick="ask('resp')">🗑️ Elimina Risposte</button>
+          <button class="btn ba sm" onclick="ask('list')">🗑️ Elimina Lista</button>
+          <button class="btn br sm" onclick="ask('all')">💣 Reset Totale</button>
+          <button class="btn bh sm" onclick="dlJSON()">⬇️ Download JSON</button>
+        </div>
+      </div>
+
+    </div><!-- /adminPanel -->
+  </div><!-- /vA -->
+
+</div><!-- /wrap -->
+
+<!-- TOASTS -->
+<div class="tbox" id="tbox"></div>
+
+<!-- MODAL -->
+<div class="mbg h" id="modal">
+  <div class="mbox card">
+    <div class="ct" id="mTitle"></div>
+    <p style="color:var(--muted);font-size:14px;margin-bottom:18px" id="mBody"></p>
+    <div style="display:flex;gap:8px;justify-content:flex-end">
+      <button class="btn bh" onclick="closeModal()">Annulla</button>
+      <button class="btn br" id="mOk" onclick="execModal()">Conferma</button>
+    </div>
+  </div>
+</div>
+
+<script>
+/* ═══════════════════════════════════════
+   CONFIG & STATE
+═══════════════════════════════════════ */
+const API_KEY   = '$2a$10$WXQXEz7rUKBd0Uez3Meh5e0tRsxg4MRt8JQVxMVzbl/ooLoh.I4Vy';
+const BIN_ID    = '69c595e1aa77b81da9228871';
+const BIN_URL   = `https://api.jsonbin.io/v3/b/${BIN_ID}`;
+const ADMIN_PWD = 'REALE';
+const SYNC_MS   = 30000;
+
+let D = { participants: { juniors: [], seniors: [] }, responses: [] };
+let adminOk     = false;
+let pendingMod  = null;
+let pendingUpload = null;
+let syncTimer   = null;
+let writing     = false;
+
+/* ═══════════════════════════════════════
+   UTILS (must be first — used throughout)
+═══════════════════════════════════════ */
+const g      = id => document.getElementById(id);
+const show   = id => g(id)?.classList.remove('h');
+const hide   = id => g(id)?.classList.add('h');
+const toggle = (id, v) => g(id)?.classList.toggle('h', !v);
+const x      = s => String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+
+/* ═══════════════════════════════════════
+   API (JSONBin v3)
+═══════════════════════════════════════ */
+async function readBin() {
+  const r = await fetch(BIN_URL, { headers: { 'X-Master-Key': API_KEY } });
+  if (!r.ok) throw new Error(`Lettura fallita (${r.status})`);
+  return (await r.json()).record;
+}
+
+async function writeBin(data) {
+  const r = await fetch(BIN_URL, {
+    method: 'PUT',
+    headers: { 'Content-Type': 'application/json', 'X-Master-Key': API_KEY },
+    body: JSON.stringify(data)
+  });
+  if (!r.ok) throw new Error(`Scrittura fallita (${r.status})`);
+  return r.json();
+}
+
+/* ═══════════════════════════════════════
+   SYNC
+═══════════════════════════════════════ */
+async function sync(quiet = false) {
+  if (writing) return;
+  setSS('sy', 'Sincronizzazione...');
+  try {
+    D = norm(await readBin());
+    localStorage.setItem('tandem_bk', JSON.stringify(D));
+    setSS('ok', `Aggiornato alle ${now()}`);
+    renderAll();
+  } catch(e) {
+    const bk = localStorage.getItem('tandem_bk');
+    if (bk) { D = JSON.parse(bk); renderAll(); }
+    setSS('er', 'Errore connessione – cache locale');
+    if (!quiet) toast('Errore di connessione', 'e');
+  }
+}
+
+function norm(d) {
+  return {
+    participants: {
+      juniors: Array.isArray(d?.participants?.juniors) ? d.participants.juniors : [],
+      seniors: Array.isArray(d?.participants?.seniors) ? d.participants.seniors : []
+    },
+    responses: Array.isArray(d?.responses) ? d.responses : []
+  };
+}
+
+function setSS(type, txt) {
+  const dot = g('dot');
+  dot.className = 'dot' + (type === 'sy' ? ' sy' : type === 'er' ? ' er' : '');
+  g('syncTxt').textContent = txt;
+}
+
+function startSync() {
+  clearInterval(syncTimer);
+  syncTimer = setInterval(() => sync(true), SYNC_MS);
+}
+
+/* ═══════════════════════════════════════
+   RENDER
+═══════════════════════════════════════ */
+function renderAll() {
+  renderForm();
+  if (adminOk) { renderStats(); renderRisposte(); }
+}
+
+function renderStats() {
+  g('sTot').textContent  = D.participants.juniors.length + D.participants.seniors.length;
+  g('sJr').textContent   = D.participants.juniors.length;
+  g('sSr').textContent   = D.participants.seniors.length;
+  g('sResp').textContent = D.responses.length;
+}
+
+function renderRisposte() {
+  const el = g('tblResp');
+  if (!D.responses.length) {
+    el.innerHTML = '<p style="color:var(--muted);text-align:center;padding:20px">Nessuna risposta ancora</p>';
+    return;
+  }
+  const rows = D.responses.map((r, i) => `
+    <tr>
+      <td><span class="bdg b${r.tipologia}">${r.tipologia.toUpperCase()}</span></td>
+      <td><strong>${x(r.nominativo)}</strong></td>
+      <td>${x(r.preferenza1 || '—')}</td>
+      <td>${x(r.preferenza2 || '—')}</td>
+      <td style="color:var(--muted);font-size:12px">${fmtDate(r.timestamp)}</td>
+      <td><button class="btn br sm" onclick="delResp(${i})">🗑️</button></td>
+    </tr>`).join('');
+  el.innerHTML = `<table>
+    <thead><tr><th>Ruolo</th><th>Nome</th><th>1ª Pref.</th><th>2ª Pref.</th><th>Data</th><th></th></tr></thead>
+    <tbody>${rows}</tbody>
+  </table>`;
+}
+
+/* ═══════════════════════════════════════
+   PARTICIPANT FORM
+═══════════════════════════════════════ */
+function renderForm() {
+  const ruolo = g('selRuolo').value;
+  const nome  = g('selNome').value;
+  if (ruolo) {
+    fillNomi(ruolo, nome);
+    if (nome) fillPrefs(nome, ruolo);
+  }
+}
+
+function onRuolo() {
+  const ruolo = g('selRuolo').value;
+  const other = ruolo === 'jr' ? 'Senior' : 'Junior';
+  g('lbl1').textContent = `1ª Preferenza ${other}`;
+  g('lbl2').textContent = `2ª Preferenza ${other}`;
+  resetNome();
+  if (ruolo) fillNomi(ruolo);
+}
+
+function fillNomi(ruolo, keep = '') {
+  const sel  = g('selNome');
+  const list = ruolo === 'jr' ? D.participants.juniors : D.participants.seniors;
+  sel.innerHTML = '<option value="">— Seleziona il tuo nome —</option>';
+  [...list].sort((a,b) => a.localeCompare(b)).forEach(n => {
+    const o = new Option(n, n);
+    if (n === keep) o.selected = true;
+    sel.appendChild(o);
+  });
+  sel.disabled = !list.length;
+}
+
+function onNome() {
+  const ruolo = g('selRuolo').value;
+  const nome  = g('selNome').value;
+  resetPrefs();
+  hide('alreadyVoted');
+  g('btnSave').disabled = !nome;
+  if (!nome) return;
+  fillPrefs(nome, ruolo);
+  if (D.responses.some(r => r.nominativo === nome)) show('alreadyVoted');
+}
+
+function fillPrefs(nome, ruolo) {
+  const otherList = ruolo === 'jr' ? D.participants.seniors : D.participants.juniors;
+  const sorted    = [...otherList].sort((a,b) => a.localeCompare(b));
+  const sel1 = g('selP1'), sel2 = g('selP2');
+
+  sel1.innerHTML = '<option value="">— Nessuna preferenza —</option>';
+  sel2.innerHTML = '<option value="">— Nessuna preferenza —</option>';
+  sorted.forEach(n => sel1.appendChild(new Option(n, n)));
+  sel1.disabled = !otherList.length;
+  sel2.disabled = true;
+
+  const existing = D.responses.find(r => r.nominativo === nome);
+  if (existing) {
+    sel1.value = existing.preferenza1 || '';
+    if (sel1.value) { onP1(); sel2.value = existing.preferenza2 || ''; }
+  }
+}
+
+function onP1() {
+  const ruolo = g('selRuolo').value;
+  const pref1 = g('selP1').value;
+  const sel2  = g('selP2');
+  const other = ruolo === 'jr' ? D.participants.seniors : D.participants.juniors;
+  sel2.innerHTML = '<option value="">— Nessuna preferenza —</option>';
+  [...other].sort((a,b) => a.localeCompare(b))
+    .filter(n => n !== pref1)
+    .forEach(n => sel2.appendChild(new Option(n, n)));
+  sel2.disabled = !pref1;
+}
+
+function resetNome() {
+  g('selNome').innerHTML = '<option value="">— Prima seleziona il ruolo —</option>';
+  g('selNome').disabled = true;
+  g('btnSave').disabled = true;
+  hide('alreadyVoted');
+  resetPrefs();
+}
+
+function resetPrefs() {
+  g('selP1').innerHTML = '<option value="">— Nessuna preferenza —</option>';
+  g('selP2').innerHTML = '<option value="">— Nessuna preferenza —</option>';
+  g('selP1').disabled = true;
+  g('selP2').disabled = true;
+}
+
+function resetForm() {
+  hide('okCard'); show('formCard');
+}
+
+/* ═══════════════════════════════════════
+   SALVA RISPOSTA
+═══════════════════════════════════════ */
+async function salva() {
+  const ruolo = g('selRuolo').value;
+  const nome  = g('selNome').value;
+  const p1    = g('selP1').value;
+  const p2    = g('selP2').value;
+  if (!ruolo || !nome) { toast('Seleziona ruolo e nome', 'e'); return; }
+
+  const btn = g('btnSave');
+  btn.disabled = true;
+  btn.innerHTML = '<span class="spin"></span> Salvataggio...';
+
+  try {
+    writing = true;
+    const fresh = norm(await readBin());
+    fresh.responses = fresh.responses.filter(r => r.nominativo !== nome);
+    fresh.responses.push({ nominativo: nome, tipologia: ruolo, preferenza1: p1, preferenza2: p2, timestamp: new Date().toISOString() });
+    await writeBin(fresh);
+    D = fresh;
+    localStorage.setItem('tandem_bk', JSON.stringify(D));
+    toast('Preferenze salvate! 🎉', 's');
+    g('okDetail').textContent = `${nome} → ${p1 || 'nessuna'} (1°), ${p2 || 'nessuna'} (2°)`;
+    hide('formCard'); show('okCard');
+    renderAll();
+  } catch(e) {
+    toast('Errore: ' + e.message, 'e');
+  } finally {
+    writing = false;
+    btn.disabled = false;
+    btn.innerHTML = '💾 Salva Preferenze';
+  }
+}
+
+/* ═══════════════════════════════════════
+   ADMIN AUTH
+═══════════════════════════════════════ */
+function goTab(t) {
+  const a = t === 'a';
+  g('tP').classList.toggle('on', !a);
+  g('tA').classList.toggle('on', a);
+  toggle('vP', !a);
+  toggle('vA', a);
+}
+
+function checkPwd() {
+  if (g('pwdInput').value === ADMIN_PWD) {
+    adminOk = true;
+    hide('lockCard'); show('adminPanel'); hide('pwdErr');
+    renderStats(); renderRisposte();
+  } else {
+    show('pwdErr'); g('pwdInput').value = '';
+  }
+}
+
+/* ═══════════════════════════════════════
+   EXCEL UPLOAD
+═══════════════════════════════════════ */
+function onXls(input) {
+  const file = input.files[0];
+  if (!file) return;
+  const reader = new FileReader();
+  reader.onload = e => {
+    try {
+      const wb   = XLSX.read(e.target.result, { type: 'binary' });
+      const ws   = wb.Sheets[wb.SheetNames[0]];
+      const rows = XLSX.utils.sheet_to_json(ws, { defval: '' });
+
+      const parsed = rows.map(row => {
+        const keys = Object.keys(row);
+        const nk = keys.find(k => /nominativo|nome/i.test(k));
+        const tk = keys.find(k => /tipologia|tipo|ruolo/i.test(k));
+        if (!nk || !tk) throw new Error('Colonne "nominativo" e "tipologia" non trovate');
+        const tipo = String(row[tk]).toLowerCase().trim();
+        if (!['jr','sr','junior','senior'].includes(tipo))
+          throw new Error(`Tipologia non valida: "${row[tk]}" — usa jr o sr`);
+        return { nome: String(row[nk]).trim(), tipo: tipo.startsWith('j') ? 'jr' : 'sr' };
+      }).filter(p => p.nome);
+
+      pendingUpload = {
+        juniors: parsed.filter(p => p.tipo === 'jr').map(p => p.nome),
+        seniors: parsed.filter(p => p.tipo === 'sr').map(p => p.nome)
+      };
+      const jr = pendingUpload.juniors.length, sr = pendingUpload.seniors.length;
+      g('xlsPreview').innerHTML = `<div class="al alg">
+        ✅ <strong>${parsed.length} partecipanti</strong> trovati &nbsp;
+        <span class="bdg bjr">JR: ${jr}</span> &nbsp;
+        <span class="bdg bsr">SR: ${sr}</span><br><br>
+        <small style="color:var(--muted)">${parsed.slice(0,6).map(p=>`${p.nome} (${p.tipo})`).join(', ')}${parsed.length>6?` …+${parsed.length-6}`:''}</small>
+      </div>`;
+      show('btnUpload');
+    } catch(err) {
+      pendingUpload = null;
+      g('xlsPreview').innerHTML = `<div class="al ale">❌ ${err.message}</div>`;
+      hide('btnUpload');
+    }
+  };
+  reader.readAsBinaryString(file);
+}
+
+async function doUpload() {
+  if (!pendingUpload) return;
+  const btn = g('btnUpload');
+  btn.disabled = true;
+  btn.innerHTML = '<span class="spin"></span> Caricamento...';
+  try {
+    writing = true;
+    const fresh = norm(await readBin());
+    fresh.participants = pendingUpload;
+    await writeBin(fresh);
+    D = fresh;
+    localStorage.setItem('tandem_bk', JSON.stringify(D));
+    toast(`✅ ${pendingUpload.juniors.length + pendingUpload.seniors.length} partecipanti caricati!`, 's');
+    g('xlsPreview').innerHTML = '';
+    hide('btnUpload');
+    g('xlsFile').value = '';
+    pendingUpload = null;
+    renderStats();
+  } catch(e) {
+    toast('Errore upload: ' + e.message, 'e');
+  } finally {
+    writing = false;
+    btn.disabled = false;
+    btn.innerHTML = '⬆️ Carica su JSONBin';
+  }
+}
+
+/* Drag & drop */
+const dz = g('dropZone');
+dz.addEventListener('dragover', e => { e.preventDefault(); dz.classList.add('over'); });
+dz.addEventListener('dragleave', () => dz.classList.remove('over'));
+dz.addEventListener('drop', e => {
+  e.preventDefault(); dz.classList.remove('over');
+  const f = e.dataTransfer.files[0];
+  if (f) { const dt = new DataTransfer(); dt.items.add(f); g('xlsFile').files = dt.files; onXls(g('xlsFile')); }
+});
+
+/* ═══════════════════════════════════════
+   DELETE RISPOSTA
+═══════════════════════════════════════ */
+async function delResp(i) {
+  const target = D.responses[i];
+  if (!confirm(`Eliminare la risposta di "${target?.nominativo}"?`)) return;
+  try {
+    writing = true;
+    const fresh = norm(await readBin());
+    fresh.responses = fresh.responses.filter(r =>
+      !(r.nominativo === target.nominativo && r.timestamp === target.timestamp));
+    await writeBin(fresh);
+    D = fresh;
+    localStorage.setItem('tandem_bk', JSON.stringify(D));
+    toast('Risposta eliminata', 'i');
+    renderStats(); renderRisposte();
+  } catch(e) { toast('Errore: ' + e.message, 'e'); }
+  finally { writing = false; }
+}
+
+/* ═══════════════════════════════════════
+   ADMIN ACTIONS
+═══════════════════════════════════════ */
+const MCFG = {
+  resp: { t:'🗑️ Elimina Risposte', b:'Eliminare TUTTE le risposte? Azione irreversibile.', ok:'Elimina Risposte' },
+  list: { t:'🗑️ Elimina Lista',    b:'Eliminare TUTTI i partecipanti? Le risposte resteranno.', ok:'Elimina Lista' },
+  all:  { t:'💣 Reset Totale',      b:'Eliminare TUTTO (partecipanti + risposte)? Azione irreversibile!', ok:'Reset Totale' }
+};
+
+function ask(type) {
+  const c = MCFG[type];
+  pendingMod = type;
+  g('mTitle').textContent = c.t;
+  g('mBody').textContent  = c.b;
+  g('mOk').textContent    = c.ok;
+  show('modal');
+}
+
+function closeModal() { hide('modal'); pendingMod = null; }
+
+async function execModal() {
+  const action = pendingMod;
+  closeModal();
+  if (!action) return;
+  try {
+    writing = true;
+    const fresh = norm(await readBin());
+    if (action === 'resp') fresh.responses = [];
+    if (action === 'list') fresh.participants = { juniors: [], seniors: [] };
+    if (action === 'all')  { fresh.responses = []; fresh.participants = { juniors: [], seniors: [] }; }
+    await writeBin(fresh);
+    D = fresh;
+    localStorage.setItem('tandem_bk', JSON.stringify(D));
+    toast('Operazione completata ✅', 's');
+    renderStats(); renderRisposte();
+  } catch(e) { toast('Errore: ' + e.message, 'e'); }
+  finally { writing = false; }
+}
+
+function dlJSON() {
+  dl('tandem-data.json', JSON.stringify({ exportedAt: new Date().toISOString(), ...D }, null, 2));
+}
+
+/* ═══════════════════════════════════════
+   MATCHING ALGORITHM
+═══════════════════════════════════════ */
+function genera() {
+  const { juniors, seniors } = D.participants;
+  if (!juniors.length || !seniors.length) {
+    toast('Servono Junior e Senior nella lista', 'e'); return;
+  }
+
+  // Build preference map
+  const pref = {};
+  D.responses.forEach(r => { pref[r.nominativo] = { p1: r.preferenza1||'', p2: r.preferenza2||'' }; });
+
+  // Score every possible pair
+  const allPairs = [];
+  juniors.forEach(jr => seniors.forEach(sr => {
+    allPairs.push({ jr, sr, ...calcScore(jr, sr, pref) });
+  }));
+  allPairs.sort((a, b) => b.score - a.score || a.jr.localeCompare(b.jr));
+
+  // Greedy assignment
+  const usedJr = new Set(), usedSr = new Set();
+  const matches = [];
+  allPairs.forEach(p => {
+    if (!usedJr.has(p.jr) && !usedSr.has(p.sr)) {
+      matches.push({ ...p, trio: [] });
+      usedJr.add(p.jr); usedSr.add(p.sr);
+    }
+  });
+
+  // Handle unmatched people → trios
+  const extraJr = juniors.filter(j => !usedJr.has(j)).map(n => ({ n, t:'jr' }));
+  const extraSr = seniors.filter(s => !usedSr.has(s)).map(n => ({ n, t:'sr' }));
+  [...extraJr, ...extraSr].forEach(extra => {
+    let best = null, bestAff = -1;
+    matches.forEach(m => {
+      const partner = extra.t === 'jr' ? m.sr : m.jr;
+      const pr = pref[partner] || { p1:'', p2:'' };
+      const aff = pr.p1 === extra.n ? 2 : pr.p2 === extra.n ? 1 : 0;
+      if (aff > bestAff || (aff === bestAff && m.score < (best?.score ?? Infinity))) {
+        bestAff = aff; best = m;
+      }
+    });
+    if (!best && matches.length) best = matches.reduce((a,b) => a.score <= b.score ? a : b);
+    if (best) best.trio.push(extra);
+  });
+
+  renderMatches(matches);
+}
+
+function calcScore(jr, sr, pref) {
+  const jp = pref[jr] || { p1:'', p2:'' };
+  const sp = pref[sr] || { p1:'', p2:'' };
+  const jC = jp.p1===sr || jp.p2===sr;
+  const sC = sp.p1===jr || sp.p2===jr;
+  const j1 = jp.p1===sr, s1 = sp.p1===jr;
+
+  if (jC && sC) {
+    const s = j1 && s1 ? 30 : (j1||s1) ? 25 : 20;
+    return { score:s, type:'reciproco', reason:`💚 Scelta reciproca${j1&&s1?' (entrambi 1ª pref.)':(j1||s1)?' (uno come 1ª pref.)':''}` };
+  }
+  if (jC) return { score:j1?15:10, type:'pref-jr', reason:`💙 ${jr} ha scelto ${sr} come ${j1?'1ª':'2ª'} preferenza` };
+  if (sC) return { score:s1?15:10, type:'pref-sr', reason:`💛 ${sr} ha scelto ${jr} come ${s1?'1ª':'2ª'} preferenza` };
+  return { score:5+Math.floor(Math.random()*4), type:'random', reason:'🎲 Abbinamento casuale' };
+}
+
+function renderMatches(matches) {
+  const icons  = { reciproco:'💚', 'pref-jr':'💙', 'pref-sr':'💛', random:'🎲' };
+  const labels = { reciproco:'Reciproco', 'pref-jr':'Pref. Jr', 'pref-sr':'Pref. Sr', random:'Random' };
+  const cnt = t => matches.filter(m => m.type===t).length;
+  const trioCnt = matches.filter(m => m.trio.length).length;
+
+  const pills = [
+    [`rgba(16,185,129,.2)`,`#6ee7b7`,`rgba(16,185,129,.4)`,`💚 Reciproci: ${cnt('reciproco')}`],
+    [`rgba(59,130,246,.2)`,`#93c5fd`,`rgba(59,130,246,.4)`,`💙 Pref.Jr: ${cnt('pref-jr')}`],
+    [`rgba(167,139,250,.18)`,`#c4b5fd`,`rgba(167,139,250,.4)`,`💛 Pref.Sr: ${cnt('pref-sr')}`],
+    [`rgba(148,163,184,.15)`,`#94a3b8`,`rgba(148,163,184,.3)`,`🎲 Random: ${cnt('random')}`],
+  ].map(([bg,c,bd,t]) => `<span class="bdg" style="background:${bg};color:${c};border:1px solid ${bd}">${t}</span>`).join(' ');
+
+  const cards = matches.map((m, i) => `
+    <div class="mc ${m.type}">
+      <div class="mi">${icons[m.type]}</div>
+      <div>
+        <div class="mn">
+          <span class="bdg bjr">${x(m.jr)}</span>
+          <span class="msep">↔</span>
+          <span class="bdg bsr">${x(m.sr)}</span>
+        </div>
+        <div class="mreason">${m.reason}</div>
+        ${m.trio.length ? `<div class="mtrio">🔺 +trio: ${m.trio.map(t=>`${x(t.n)} (${t.t})`).join(', ')}</div>` : ''}
+      </div>
+      <div class="msc">
+        <div class="sn">${m.score}</div>
+        <div class="sl">${labels[m.type]}</div>
+      </div>
+    </div>`).join('');
+
+  g('matchOut').innerHTML = `
+    <div style="display:flex;flex-wrap:wrap;gap:7px;margin-bottom:14px">
+      ${pills}
+      ${trioCnt ? `<span class="bdg" style="background:rgba(245,158,11,.2);color:#fcd34d;border:1px solid rgba(245,158,11,.4)">🔺 Trio: ${trioCnt}</span>` : ''}
+    </div>
+    <div class="ml">${cards}</div>
+    <div class="acts" style="margin-top:14px">
+      <button class="btn bh sm" onclick="dlMatches()">⬇️ Download Risultati</button>
+      <button class="btn bh sm" onclick="genera()">🔄 Rigenera</button>
+    </div>`;
+  window._lastMatches = matches;
+}
+
+function dlMatches() {
+  if (!window._lastMatches) return;
+  dl('tandem-matches.json', JSON.stringify({ generatedAt: new Date().toISOString(), matches: window._lastMatches }, null, 2));
+}
+
+/* ═══════════════════════════════════════
+   HELPERS
+═══════════════════════════════════════ */
+function toast(msg, type='i', ms=3200) {
+  const el = document.createElement('div');
+  el.className = `toast ${type}`;
+  el.textContent = msg;
+  g('tbox').appendChild(el);
+  setTimeout(() => el.remove(), ms);
+}
+
+function now() {
+  return new Date().toLocaleTimeString('it-IT', { hour:'2-digit', minute:'2-digit', second:'2-digit' });
+}
+
+function fmtDate(ts) {
+  if (!ts) return '—';
+  try { return new Date(ts).toLocaleString('it-IT', { day:'2-digit', month:'2-digit', hour:'2-digit', minute:'2-digit' }); }
+  catch { return ts; }
+}
+
+function dl(name, content) {
+  const a = document.createElement('a');
+  a.href = 'data:application/json;charset=utf-8,' + encodeURIComponent(content);
+  a.download = name;
+  a.click();
+}
+
+/* ═══════════════════════════════════════
+   BOOT
+═══════════════════════════════════════ */
+sync();
+startSync();
+</script>
+</body>
+</html>
